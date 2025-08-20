@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarm & Timer App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js for sound generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* General Body and Layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #a0c4ff, #87b0ff); /* Light blue gradient background (static) */
+            min-height: 100vh; /* Ensures enough scroll for the timer section */
+            color: #333;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            scroll-behavior: smooth; /* Smooth scrolling for section transitions */
+        }
+
+        /* No @keyframes gradientMove or background-size on body for now */
+
+        .app-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 500px;
+    opacity: 0;
+    transform: translateY(150px);
+    transition: all 0.5s ease-out;
+}
+/* Alignment Fixes */
+.app-section {
+    gap: 1.5rem; /* adds spacing between image, ribbon, and card */
+}
+
+.app-section img {
+    display: block;
+    margin: 0 auto; /* center the clock */
+}
+
+.section-title {
+    display: inline-block;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.content-card {
+    margin: 0 auto;
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+        .app-section.is-visible {
+            /* Final state for transition: fully visible and in its intended position */
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Content Card (The Main Box) */
+        .content-card {
+            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white for frosted effect */
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 90%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            -webkit-backdrop-filter: blur(10px); /* For Safari */
+            box-sizing: border-box;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            position: relative; /* For pattern overlay */
+            overflow: hidden; /* Ensure pattern stays within bounds */
+        }
+        /* Gingham Pattern Overlay */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Gingham pattern using repeating linear gradients */
+            background-image:
+                linear-gradient(45deg, hsla(210, 70%, 85%, 0.6) 25%, transparent 25%, transparent 75%, hsla(210, 70%, 85%, 0.6) 75%, hsla(210, 70%, 85%, 0.6) 100%),
+                linear-gradient(-45deg, hsla(210, 70%, 85%, 0.6) 25%, transparent 25%, transparent 75%, hsla(210, 70%, 85%, 0.6) 75%, hsla(210, 70%, 85%, 0.6) 100%);
+            background-size: 25px 25px; /* Size of the squares */
+            background-position: 0 0, 12.5px 12.5px; /* Offset for checkerboard */
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+        .relative.z-10 {
+             position: relative;
+             z-index: 10; /* Ensure content is above the pattern */
+        }
+
+        /* Ribbon Style (REVERTED to CSS-generated ribbon) */
+        .ribbon {
+            background-color: #72a0e2; /* Muted blue for the ribbon */
+            color: white;
+            font-weight: 800; /* Extra bold for "ALARM" / "TIMER" */
+            padding: 0.5rem 1.5rem; /* Reverted padding */
+            border-radius: 8px; /* Reverted border-radius */
+            margin-bottom: 1.5rem;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            font-size: 1.5rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            /* Removed image specific styles like width, max-width, aspect-ratio, height: auto */
+        }
+        .ribbon::before, .ribbon::after { /* Reverted pseudo-elements for ribbon tails */
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            border-top: 8px solid #5a85cc; /* Darker blue for the ribbon tails */
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+        .ribbon::before {
+            left: 20%; /* Adjusted for better visual balance */
+            transform: translateX(-50%);
+        }
+        .ribbon::after {
+            right: 20%; /* Adjusted for better visual balance */
+            transform: translateX(50%);
+        }
+
+        /* Input Rows for Alarm & Timer */
+        .input-row {
+            display: flex;
+            align-items: center; /* Vertically center items */
+            gap: 1.5rem; /* Space between label and input */
+            margin-bottom: 1.2rem;
+        }
+        .input-label {
+            font-size: 1.2rem; /* Slightly larger */
+            font-weight: 700; /* Bold */
+            color: #4a4a4a; /* Darker text */
+            width: 100px; /* Increased fixed width for consistent alignment */
+            flex-shrink: 0; /* Prevent label from shrinking */
+            text-align: left; /* Ensure label text aligns left within its fixed width */
+            text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.1); /* Subtle shadow for stylized look */
+        }
+        /* Input Fields common styles */
+        .input-field {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid #a0c4ff;
+            border-radius: 10px;
+            padding: 0.6rem 3rem 0.6rem 1rem; /* Unified generous right padding for all inputs */
+            flex-grow: 1;
+            flex-shrink: 1;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            text-align: right; /* Text aligns to the right within this padding */
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Specific styles for SELECT elements with input-field class (to add custom arrow and prevent overlap) */
+        .select-field-with-arrow {
+            -webkit-appearance: none; /* Remove default arrow for select */
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000%22%20d%3D%22M287%2C197.3l-139.3%2C139.3c-2.4%2C2.4-5.5%2C3.6-8.7%2C3.6s-6.3-1.2-8.7-3.6L5.4%2C197.3c-4.8-4.8-4.8-12.5%2C0-17.3c4.8-4.8%2C12.5-4.8%2C17.3%2C0l126%2C126l126-126c4.8-4.8%2C12.5-4.8%2C17.3%2C0C291.8%2C184.8%2C291.8%2C192.5%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.8rem center; /* Precise arrow position within the 3rem padding */
+            background-size: 0.65rem auto; /* Consistent arrow size */
+            /* Removed padding-right from here; it's now handled universally by .input-field */
+        }
+
+
+        /* Timer Display */
+        .timer-display {
+            font-size: 3.5rem; /* Larger for prominence */
+            font-weight: 800; /* Extra bold */
+            color: #333;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            background-color: transparent; /* Ensure no background for the text itself */
+            display: inline-block; /* To apply shadow correctly */
+            width: 100%; /* Ensure it takes full width for centering */
+            text-align: center; /* Explicitly center text */
+        }
+
+        /* Action Buttons */
+        .action-button {
+            font-weight: bold;
+            padding: 0.8rem 2rem;
+            border-radius: 10px; /* Slightly less rounded for a rectangular feel */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; /* Quicker transition for active state */
+            cursor: pointer;
+            width: 100%;
+            border: none;
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.3);
+        }
+        .action-button:active {
+            transform: translateY(1px); /* More pronounced press down */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Reduced shadow on press */
+        }
+
+        /* Alarm Start Button & Timer Buttons (now solid blue) */
+        .alarm-start-button,
+        .timer-button {
+            background-color: #72a0e2; /* Muted blue */
+            color: white; /* White text for contrast */
+        }
+
+        /* Floating Icon Animation */
+        .floating-icon {
+            animation: float 3s ease-in-out infinite; /* Smooth floating animation */
+            transition: transform 0.5s ease; /* Smooth transition for initial positioning */
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); } /* Moves up 10px */
+            100% { transform: translateY(0px); }
+        }
+
+        /* Loading Spinner (Removed, but keeping spinner styles in case) */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal for Custom Alerts & Alarm Trigger */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #333;
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            max-width: 90%;
+            width: 350px;
+            font-size: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+        }
+        .modal-content button {
+            background-color: #72a0e2;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        .modal-content button:hover {
+            background-color: #5a85cc;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .timer-display {
+                font-size: 2.8rem;
+            }
+            .action-button {
+                font-size: 1.1rem;
+                padding: 0.7rem 1.5rem;
+            }
+            .content-card {
+                padding: 1rem;
+            }
+            .ribbon {
+                font-size: 1.3rem;
+                padding: 0.4rem 1rem;
+            }
+            .input-label, .input-field {
+                font-size: 1rem;
+            }
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    
+        @media (max-width: 420px) {
+            .input-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .input-label {
+                width: auto;
+                text-align: left;
+            }
+            .input-field {
+                width: 100%;
+                text-align: left;
+            }
+        }
+
+</style>
+</head>
+<body>
+    <div id="alarm-section" class="app-section">
+        <!-- Using your uploaded image for the alarm clock with floating-icon class -->
+        <img src="image_537d0c.jpg" alt="Alarm Clock" class="w-36 h-36 mb-6 floating-icon">
+        <div class="ribbon">ALARM</div>
+        <div class="content-card">
+            <div class="relative z-10">
+                <div class="input-row">
+                    <span class="input-label">HOURS</span>
+                    <select id="alarm-hours" class="input-field select-field-with-arrow">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="input-row">
+                    <span class="input-label">MINS</span>
+                    <select id="alarm-minutes" class="input-field select-field-with-arrow">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="input-row">
+                    <span class="input-label">SOUND</span>
+                    <select id="alarm-sound" class="input-field select-field-with-arrow">
+                        <option value="Chime">Chime</option>
+                        <option value="Bell">Bell</option>
+                        <option value="Digital">Digital</option>
+                        <option value="SynthWave">Synth Wave</option>
+                        <option value="Whistle">Whistle</option>
+                    </select>
+                </div>
+                <div class="input-row mt-4">
+                    <span class="input-label">TITLE</span>
+                    <input type="text" id="alarm-title" class="input-field" value="STUDY">
+                </div>
+                
+                <button id="start-alarm" class="action-button alarm-start-button mt-4">START</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="timer-section" class="app-section">
+        <!-- Using your uploaded image for the timer clock with floating-icon class -->
+        <img src="image_7cd0a4.png" alt="Timer Clock" class="w-36 h-36 mb-6 floating-icon">
+        <div class="ribbon">TIMER</div>
+        <div class="content-card">
+            <div class="relative z-10">
+                <!-- Input fields for Timer Duration -->
+                <div class="input-row">
+                    <span class="input-label">HOURS</span>
+                    <select id="timer-hours" class="input-field select-field-with-arrow">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="input-row">
+                    <span class="input-label">MINS</span>
+                    <select id="timer-minutes" class="input-field select-field-with-arrow">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="input-row">
+                    <span class="input-label">SECS</span>
+                    <select id="timer-seconds" class="input-field select-field-with-arrow">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+
+                <div id="timer-display" class="timer-display mt-4">00:00:00</div>
+                <button id="start-timer" class="action-button timer-button">START</button>
+                <button id="stop-timer" class="action-button timer-button mt-4">PAUSE</button>
+                <button id="reset-timer" class="action-button timer-button mt-4">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const alarmHoursSelect = document.getElementById('alarm-hours');
+        const alarmMinutesSelect = document.getElementById('alarm-minutes');
+        const startAlarmButton = document.getElementById('start-alarm');
+        const alarmSoundSelect = document.getElementById('alarm-sound');
+        const alarmTitleInput = document.getElementById('alarm-title');
+
+        const timerHoursSelect = document.getElementById('timer-hours');
+        const timerMinutesSelect = document.getElementById('timer-minutes');
+        const timerSecondsSelect = document.getElementById('timer-seconds');
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerButton = document.getElementById('start-timer');
+        const stopTimerButton = document.getElementById('stop-timer');
+        const resetTimerButton = document.getElementById('reset-timer');
+
+        let alarmTimeout;
+        let currentAlarmSoundPlayer;
+
+        let timerInterval;
+        let initialTimerDuration = 0; // Stores the initial duration in seconds
+        let remainingSeconds = 0; // Tracks seconds remaining for the countdown
+
+        // --- Shared Utility Functions ---
+        function formatTime(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function populateTimeOptions(selectElement, max, unit = '') {
+            for (let i = 0; i <= max; i++) {
+                const option = document.createElement('option');
+                option.value = String(i).padStart(2, '0');
+                option.textContent = String(i).padStart(2, '0') + (unit ? ` ${unit}` : '');
+                selectElement.appendChild(option);
+            }
+            selectElement.value = '00'; // Default to 00
+        }
+
+        /**
+         * Plays a sound based on the selected sound type using Tone.js.
+         * @param {string} soundType - The type of sound to play (e.g., 'Chime', 'Bell').
+         * @returns {Tone.Synth} The synth object used to play the sound.
+         */
+        function playAlarmSound(soundType) {
+            // Dispose of any previous sound player to prevent overlapping
+            if (currentAlarmSoundPlayer) {
+                currentAlarmSoundPlayer.dispose();
+            }
+
+            let synth;
+            switch (soundType) {
+                case 'Chime':
+                    synth = new Tone.MetalSynth({
+                        frequency: 200,
+                        envelope: {
+                            attack: 0.001,
+                            decay: 1.4,
+                            release: 0.2
+                        },
+                        harmonicity: 3.1,
+                        modulationIndex: 3.5,
+                        resonance: 4000,
+                        octaves: 1.5,
+                        volume: -10
+                    }).toDestination();
+                    synth.triggerAttackRelease("C5", "16n");
+                    break;
+                case 'Bell':
+                    synth = new Tone.PluckSynth().toDestination();
+                    synth.triggerAttackRelease("G4", "2n");
+                    break;
+                case 'Digital':
+                    synth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: "square" },
+                        envelope: {
+                            attack: 0.005,
+                            decay: 0.1,
+                            sustain: 0.2,
+                            release: 0.5
+                        },
+                        volume: -15
+                    }).toDestination();
+                    synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n");
+                    break;
+                case 'SynthWave':
+                    synth = new Tone.Synth({
+                        oscillator: { type: "sawtooth" },
+                        envelope: {
+                            attack: 0.1,
+                            decay: 0.2,
+                            sustain: 0.5,
+                            release: 1
+                        },
+                        volume: -12
+                    }).toDestination();
+                    synth.triggerAttackRelease("A4", "1n");
+                    break;
+                case 'Whistle':
+                    synth = new Tone.AMSynth({
+                        harmonicity: 1.5,
+                        oscillator: { type: "triangle" },
+                        modulation: { type: "sine" },
+                        envelope: {
+                            attack: 0.02,
+                            decay: 0.1,
+                            sustain: 0.3,
+                            release: 0.5
+                        },
+                        volume: -10
+                    }).toDestination();
+                    synth.triggerAttackRelease("C6", "8n");
+                    break;
+                default:
+                    // Default to a simple tone if no match
+                    synth = new Tone.MembraneSynth().toDestination();
+                    synth.triggerAttackRelease("C3", "8n");
+                    break;
+            }
+            currentAlarmSoundPlayer = synth; // Store the current synth for potential disposal
+            return synth;
+        }
+
+        // --- Alarm Logic ---
+        function setAlarm() {
+            clearTimeout(alarmTimeout); // Clear any existing alarm
+
+            const hours = parseInt(alarmHoursSelect.value);
+            const minutes = parseInt(alarmMinutesSelect.value); 
+            const selectedSound = alarmSoundSelect.value;
+            const title = alarmTitleInput.value;
+
+            const now = new Date();
+            let alarmTime = new Date();
+            alarmTime.setHours(hours, minutes, 0, 0); // Set target alarm time
+
+            // If alarm time is in the past, set it for the next day
+            if (alarmTime.getTime() <= now.getTime()) {
+                alarmTime.setDate(alarmTime.getDate() + 1);
+            }
+
+            const timeToAlarm = alarmTime.getTime() - now.getTime();
+
+            if (timeToAlarm < 0) {
+                customAlert("Please select a time in the future.");
+                return;
+            }
+
+            customAlert(`Alarm set for ${alarmTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Title: "${title}". Sound: "${selectedSound}".`);
+
+            alarmTimeout = setTimeout(() => {
+                Tone.start(); // Ensure audio context is started on user interaction
+                playAlarmSound(selectedSound); // Play the selected sound
+                customAlert(`ALARM! Time for: "${title}"`);
+            }, timeToAlarm);}
+
+        // --- Countdown Timer Logic ---
+        function updateTimerDisplay() {
+            const displayTime = formatTime(remainingSeconds);
+            timerDisplay.textContent = displayTime;
+        }
+
+        function calculateAndSetTimerDuration() {
+            const hrs = parseInt(timerHoursSelect.value);
+            const mins = parseInt(timerMinutesSelect.value);
+            const secs = parseInt(timerSecondsSelect.value);
+
+            initialTimerDuration = (hrs * 3600) + (mins * 60) + secs;
+            remainingSeconds = initialTimerDuration; // Update remaining seconds to the new total
+            updateTimerDisplay(); // Update the display immediately
+        }
+
+        function startTimer() {
+            if (timerInterval) return; // Prevent multiple intervals
+
+            // If timer is at 0 or needs to be set, calculate new duration from inputs before starting
+            if (remainingSeconds <= 0) {
+                 calculateAndSetTimerDuration(); // Make sure remainingSeconds is updated
+                 if (initialTimerDuration === 0) { // Now check if the newly set duration is 0
+                    customAlert("Please set a timer duration greater than zero before starting.");
+                    return; // Don't start if duration is zero
+                 }
+            }
+
+
+            timerInterval = setInterval(() => {
+                if (remainingSeconds > 0) {
+                    remainingSeconds--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    Tone.start(); // Ensure audio context is started
+                    playAlarmSound('Bell'); // Play a default sound when timer finishes
+                    customAlert("Timer finished!");
+                }
+            }, 1000); // Update every second
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            remainingSeconds = initialTimerDuration; // Reset to the initially set duration
+            updateTimerDisplay();
+        }
+
+        // --- Custom Alert/Modal Function ---
+        function customAlert(message, onConfirm = null) {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.innerHTML = `<p>${message}</p><button>OK</button>`;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            modalContent.querySelector('button').addEventListener('click', () => {
+                modalOverlay.remove();
+                if (onConfirm) onConfirm();
+            });
+        }
+
+        // --- Section Visibility (Scroll Transition) ---
+        const sections = document.querySelectorAll('.app-section');
+
+        const observerOptions = {
+            root: null, // viewport as root
+            rootMargin: '0px',
+            threshold: 0.1 // 10% of element visible
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // When a section enters the viewport
+                    entry.target.classList.add('is-visible');
+                } else {
+                    // When a section leaves the viewport
+                    // Only remove the class; CSS will handle returning to initial state with transition
+                    entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // --- Orientation Detection Logic ---
+function handleOrientationChange() {
+    let angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    const alarmSection = document.getElementById('alarm-section');
+    const timerSection = document.getElementById('timer-section');
+
+    // Normalize angle
+    angle = ((angle % 360) + 360) % 360;
+
+    function handleOrientationChange() {
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const currentPath = window.location.pathname;
+
+  if (isLandscape && currentPath.endsWith("index.html")) {
+    window.location.href = "landscape-mode.html";
+  }
+}
+
+window.addEventListener("orientationchange", handleOrientationChange);
+window.addEventListener("resize", handleOrientationChange);
+document.addEventListener("DOMContentLoaded", handleOrientationChange);
+}
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Populate alarm time options
+            populateTimeOptions(alarmHoursSelect, 23);
+            populateTimeOptions(alarmMinutesSelect, 59);
+
+            // Populate timer time options
+            populateTimeOptions(timerHoursSelect, 23);
+            populateTimeOptions(timerMinutesSelect, 59);
+            populateTimeOptions(timerSecondsSelect, 59);
+
+            // Initialize timer display with default values (00:00:00) without alert
+            calculateAndSetTimerDuration(); // Initial display set here
+
+            // Initial check for orientation on page load
+            handleOrientationChange(); 
+        });
+
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', handleOrientationChange);
+        // Also listen for resize events, as sometimes emulators might just resize, not trigger orientationchange
+        window.addEventListener('resize', handleOrientationChange);
+
+
+        startAlarmButton.addEventListener('click', setAlarm);
+        startTimerButton.addEventListener('click', startTimer);
+        stopTimerButton.addEventListener('click', pauseTimer);
+        resetTimerButton.addEventListener('click', resetTimer);
+
+        // Update initial timer duration when user changes inputs
+        timerHoursSelect.addEventListener('change', calculateAndSetTimerDuration);
+        timerMinutesSelect.addEventListener('change', calculateAndSetTimerDuration);
+        timerSecondsSelect.addEventListener('change', calculateAndSetTimerDuration);
+    </script>
+</body>
+</html>
