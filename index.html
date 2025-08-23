@@ -670,26 +670,29 @@
 
         // --- Orientation Detection Logic ---
 function handleOrientationChange() {
-    let angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    const alarmSection = document.getElementById('alarm-section');
-    const timerSection = document.getElementById('timer-section');
+  let angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
 
-    // Normalize angle
-    angle = ((angle % 360) + 360) % 360;
+  // Normalize angle to always be 0–359
+  angle = ((angle % 360) + 360) % 360;
 
-    function handleOrientationChange() {
-  const isLandscape = window.innerWidth > window.innerHeight;
-  const currentPath = window.location.pathname;
+  const alarmSection = document.getElementById('alarm-section');
+  const timerSection = document.getElementById('timer-section');
 
-  if (isLandscape && currentPath.endsWith("index.html")) {
-    window.location.href = "landscape-mode.html";
+  if (angle === 0) {
+    // Normal portrait → show alarm section
+    alarmSection.scrollIntoView({ behavior: "smooth" });
+  } else if (angle === 180) {
+    // Upside down portrait → show timer section
+    timerSection.scrollIntoView({ behavior: "smooth" });
   }
 }
 
+// Run on load
+document.addEventListener("DOMContentLoaded", handleOrientationChange);
+// Update on changes
 window.addEventListener("orientationchange", handleOrientationChange);
 window.addEventListener("resize", handleOrientationChange);
-document.addEventListener("DOMContentLoaded", handleOrientationChange);
-}
+
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             // Populate alarm time options
@@ -726,4 +729,5 @@ document.addEventListener("DOMContentLoaded", handleOrientationChange);
     </script>
 </body>
 </html>
+
 
