@@ -6,6 +6,7 @@
     <title>Alarm & Timer App</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js for sound generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
         /* General Body and Layout */
@@ -24,43 +25,43 @@
         /* No @keyframes gradientMove or background-size on body for now */
 
         .app-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
-    height: 100vh;
-    width: 100%;
-    box-sizing: border-box;
-    max-width: 500px;
-    opacity: 0;
-    transform: translateY(150px);
-    transition: all 0.5s ease-out;
-}
-/* Alignment Fixes */
-.app-section {
-    gap: 1.5rem; /* adds spacing between image, ribbon, and card */
-}
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            height: 100vh;
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 500px;
+            opacity: 0;
+            transform: translateY(150px);
+            transition: all 0.5s ease-out;
+        }
+        /* Alignment Fixes */
+        .app-section {
+            gap: 1.5rem; /* adds spacing between image, ribbon, and card */
+        }
 
-.app-section img {
-    display: block;
-    margin: 0 auto; /* center the clock */
-}
+        .app-section img {
+            display: block;
+            margin: 0 auto; /* center the clock */
+        }
 
-.section-title {
-    display: inline-block;
-    margin: 0 auto;
-    text-align: center;
-}
+        .section-title {
+            display: inline-block;
+            margin: 0 auto;
+            text-align: center;
+        }
 
-.content-card {
-    margin: 0 auto;
-    width: 90%;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+        .content-card {
+            margin: 0 auto;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         .app-section.is-visible {
             /* Final state for transition: fully visible and in its intended position */
             opacity: 1;
@@ -344,6 +345,7 @@
 </head>
 <body>
     <div id="alarm-section" class="app-section">
+        <!-- Using your uploaded image for the alarm clock with floating-icon class -->
         <img src="image_537d0c.jpg" alt="Alarm Clock" class="w-36 h-36 mb-6 floating-icon">
         <div class="ribbon">ALARM</div>
         <div class="content-card">
@@ -351,12 +353,14 @@
                 <div class="input-row">
                     <span class="input-label">HOURS</span>
                     <select id="alarm-hours" class="input-field select-field-with-arrow">
-                        </select>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">MINS</span>
                     <select id="alarm-minutes" class="input-field select-field-with-arrow">
-                        </select>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">SOUND</span>
@@ -379,24 +383,29 @@
     </div>
 
     <div id="timer-section" class="app-section">
+        <!-- Using your uploaded image for the timer clock with floating-icon class -->
         <img src="image_7cd0a4.png" alt="Timer Clock" class="w-36 h-36 mb-6 floating-icon">
         <div class="ribbon">TIMER</div>
         <div class="content-card">
             <div class="relative z-10">
+                <!-- Input fields for Timer Duration -->
                 <div class="input-row">
                     <span class="input-label">HOURS</span>
                     <select id="timer-hours" class="input-field select-field-with-arrow">
-                        </select>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">MINS</span>
                     <select id="timer-minutes" class="input-field select-field-with-arrow">
-                        </select>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">SECS</span>
                     <select id="timer-seconds" class="input-field select-field-with-arrow">
-                        </select>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
 
                 <div id="timer-display" class="timer-display mt-4">00:00:00</div>
@@ -673,16 +682,28 @@
                 // Portrait mode
                 const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
                 
-                if (angle === 0 || angle === 180) { // Portrait or Upside Down Portrait
-                    if (angle === 0) {
-                        // Normal portrait: show alarm, hide timer
-                        alarmSection.classList.remove('hidden-section');
-                        timerSection.classList.add('hidden-section');
-                    } else if (angle === 180) {
-                        // Upside down portrait: show timer, hide alarm
-                        alarmSection.classList.add('hidden-section');
-                        timerSection.classList.remove('hidden-section');
-                    }
+                // Ensure alarm and timer sections are accessible
+                if (!alarmSection || !timerSection) {
+                    console.error("Alarm or Timer section not found in DOM.");
+                    return;
+                }
+
+                if (angle === 0) { // Normal portrait
+                    // Show alarm, hide timer
+                    alarmSection.classList.remove('hidden-section');
+                    timerSection.classList.add('hidden-section');
+                } else if (angle === 180) { // Upside down portrait
+                    // Show timer, hide alarm
+                    alarmSection.classList.add('hidden-section');
+                    timerSection.classList.remove('hidden-section');
+                } else {
+                    // Fallback for other portrait angles (e.g., if there's a minor rotation that's still portrait)
+                    // You might choose to show neither, or a default section. For now, hide both.
+                    alarmSection.classList.add('hidden-section');
+                    timerSection.classList.add('hidden-section');
+                    // Or, you could default to the alarm
+                    // alarmSection.classList.remove('hidden-section');
+                    // timerSection.classList.add('hidden-section');
                 }
             } else {
                 // Landscape mode: redirect to a new page
@@ -703,12 +724,15 @@
 
             // Initialize timer display with default values (00:00:00) without alert
             calculateAndSetTimerDuration(); // Initial display set here
+
+            // Initial check for orientation on page load
+            handleOrientationChange(); // Call once immediately after DOM is ready
         });
 
         // Listen for orientation changes and screen resize
         window.addEventListener('orientationchange', handleOrientationChange);
         window.addEventListener('resize', handleOrientationChange);
-        // Initial check on page load
+        // Initial check on page load (also covered by DOMContentLoaded, but good for robustness)
         handleOrientationChange();
 
         startAlarmButton.addEventListener('click', setAlarm);
