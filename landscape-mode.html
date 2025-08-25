@@ -163,16 +163,17 @@
   function handleOrientationChange() {
     const isPortrait = window.innerHeight > window.innerWidth;
     const currentPath = window.location.pathname;
-    if (isPortrait && currentPath.endsWith("landscape-mode.html")) {
-      window.location.href = "index.html";
+    // Check if currently in landscape-mode.html and if the orientation is now portrait
+    if (isPortrait && currentPath.includes("landscape-mode.html")) {
+      window.location.href = "index.html"; // Redirect to index.html
     }
   }
   window.addEventListener("orientationchange", handleOrientationChange);
   window.addEventListener("resize", handleOrientationChange);
-  document.addEventListener("DOMContentLoaded", handleOrientationChange);
+  document.addEventListener("DOMContentLoaded", handleOrientationChange); // Initial check
 
   // Weather API
-  const apiKey = "b67863341cf6b3f6eb9dde5fe5298809";
+  const apiKey = "b67863341cf6b3f6eb9dde5fe5298809"; // Using a placeholder for the actual API key. You should replace this with a valid key.
 
   async function fetchWeather(city) {
     try {
@@ -214,65 +215,71 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Check for geolocation support
     if (navigator.geolocation) {
+      // Get current position
       navigator.geolocation.getCurrentPosition(
+        // Success callback
         pos => fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude),
+        // Error callback, fallback to default city
         () => fetchWeather("New Delhi")
       );
     } else {
+      // Geolocation not supported, fallback to default city
       fetchWeather("New Delhi");
     }
+    // Event listener for search button
     document.getElementById("search-btn").addEventListener("click", () => {
       const city = document.getElementById("city-input").value;
-      if (city) fetchWeather(city);
+      if (city) fetchWeather(city); // Fetch weather if city input is not empty
     });
   });
+
   // Stopwatch logic
-let stopwatchInterval;
-let elapsedTime = 0;
-let isRunning = false;
+  let stopwatchInterval;
+  let elapsedTime = 0;
+  let isRunning = false;
 
-const stopwatchDisplay = document.getElementById("stopwatch-display");
-const startBtn = document.getElementById("stopwatch-start");
-const pauseBtn = document.getElementById("stopwatch-pause");
-const resetBtn = document.getElementById("stopwatch-reset");
+  const stopwatchDisplay = document.getElementById("stopwatch-display");
+  const startBtn = document.getElementById("stopwatch-start");
+  const pauseBtn = document.getElementById("stopwatch-pause");
+  const resetBtn = document.getElementById("stopwatch-reset");
 
-function updateDisplay() {
-  let hours = Math.floor(elapsedTime / 3600);
-  let minutes = Math.floor((elapsedTime % 3600) / 60);
-  let seconds = elapsedTime % 60;
+  function updateDisplay() {
+    let hours = Math.floor(elapsedTime / 3600);
+    let minutes = Math.floor((elapsedTime % 3600) / 60);
+    let seconds = elapsedTime % 60;
 
-  stopwatchDisplay.textContent = 
-    String(hours).padStart(2, "0") + ":" +
-    String(minutes).padStart(2, "0") + ":" +
-    String(seconds).padStart(2, "0");
-}
-
-startBtn.addEventListener("click", () => {
-  if (!isRunning) {
-    isRunning = true;
-    stopwatchInterval = setInterval(() => {
-      elapsedTime++;
-      updateDisplay();
-    }, 1000);
+    stopwatchDisplay.textContent = 
+      String(hours).padStart(2, "0") + ":" +
+      String(minutes).padStart(2, "0") + ":" +
+      String(seconds).padStart(2, "0");
   }
-});
 
-pauseBtn.addEventListener("click", () => {
-  clearInterval(stopwatchInterval);
-  isRunning = false;
-});
+  startBtn.addEventListener("click", () => {
+    if (!isRunning) {
+      isRunning = true;
+      stopwatchInterval = setInterval(() => {
+        elapsedTime++;
+        updateDisplay();
+      }, 1000);
+    }
+  });
 
-resetBtn.addEventListener("click", () => {
-  clearInterval(stopwatchInterval);
-  isRunning = false;
-  elapsedTime = 0;
+  pauseBtn.addEventListener("click", () => {
+    clearInterval(stopwatchInterval);
+    isRunning = false;
+  });
+
+  resetBtn.addEventListener("click", () => {
+    clearInterval(stopwatchInterval);
+    isRunning = false;
+    elapsedTime = 0;
+    updateDisplay();
+  });
+
+  // Initialize display
   updateDisplay();
-});
-
-// Initialize display
-updateDisplay();
 </script>
 </body>
 </html>
-
