@@ -6,7 +6,6 @@
     <title>Alarm & Timer App</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- Tone.js for sound generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
         /* General Body and Layout */
@@ -336,12 +335,15 @@
                 text-align: left;
             }
         }
+        /* CSS to hide/show sections */
+        .hidden-section {
+            display: none;
+        }
 
 </style>
 </head>
 <body>
     <div id="alarm-section" class="app-section">
-        <!-- Using your uploaded image for the alarm clock with floating-icon class -->
         <img src="image_537d0c.jpg" alt="Alarm Clock" class="w-36 h-36 mb-6 floating-icon">
         <div class="ribbon">ALARM</div>
         <div class="content-card">
@@ -349,14 +351,12 @@
                 <div class="input-row">
                     <span class="input-label">HOURS</span>
                     <select id="alarm-hours" class="input-field select-field-with-arrow">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">MINS</span>
                     <select id="alarm-minutes" class="input-field select-field-with-arrow">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">SOUND</span>
@@ -379,29 +379,24 @@
     </div>
 
     <div id="timer-section" class="app-section">
-        <!-- Using your uploaded image for the timer clock with floating-icon class -->
         <img src="image_7cd0a4.png" alt="Timer Clock" class="w-36 h-36 mb-6 floating-icon">
         <div class="ribbon">TIMER</div>
         <div class="content-card">
             <div class="relative z-10">
-                <!-- Input fields for Timer Duration -->
                 <div class="input-row">
                     <span class="input-label">HOURS</span>
                     <select id="timer-hours" class="input-field select-field-with-arrow">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">MINS</span>
                     <select id="timer-minutes" class="input-field select-field-with-arrow">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
                 <div class="input-row">
                     <span class="input-label">SECS</span>
                     <select id="timer-seconds" class="input-field select-field-with-arrow">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
 
                 <div id="timer-display" class="timer-display mt-4">00:00:00</div>
@@ -669,30 +664,32 @@
         });
 
         // --- Orientation Detection Logic ---
-function handleOrientationChange() {
-  let angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+        function handleOrientationChange() {
+            const alarmSection = document.getElementById('alarm-section');
+            const timerSection = document.getElementById('timer-section');
 
-  // Normalize angle to always be 0–359
-  angle = ((angle % 360) + 360) % 360;
-
-  const alarmSection = document.getElementById('alarm-section');
-  const timerSection = document.getElementById('timer-section');
-
-  if (angle === 0) {
-    // Normal portrait → show alarm section
-    alarmSection.scrollIntoView({ behavior: "smooth" });
-  } else if (angle === 180) {
-    // Upside down portrait → show timer section
-    timerSection.scrollIntoView({ behavior: "smooth" });
-  }
-}
-
-// Run on load
-document.addEventListener("DOMContentLoaded", handleOrientationChange);
-// Update on changes
-window.addEventListener("orientationchange", handleOrientationChange);
-window.addEventListener("resize", handleOrientationChange);
-
+            // Check if the device is in portrait mode
+            if (window.innerHeight > window.innerWidth) {
+                // Portrait mode
+                const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+                
+                if (angle === 0 || angle === 180) { // Portrait or Upside Down Portrait
+                    if (angle === 0) {
+                        // Normal portrait: show alarm, hide timer
+                        alarmSection.classList.remove('hidden-section');
+                        timerSection.classList.add('hidden-section');
+                    } else if (angle === 180) {
+                        // Upside down portrait: show timer, hide alarm
+                        alarmSection.classList.add('hidden-section');
+                        timerSection.classList.remove('hidden-section');
+                    }
+                }
+            } else {
+                // Landscape mode: redirect to a new page
+                window.location.href = 'landscape-mode.html';
+            }
+        }
+        
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             // Populate alarm time options
@@ -706,16 +703,13 @@ window.addEventListener("resize", handleOrientationChange);
 
             // Initialize timer display with default values (00:00:00) without alert
             calculateAndSetTimerDuration(); // Initial display set here
-
-            // Initial check for orientation on page load
-            handleOrientationChange(); 
         });
 
-        // Listen for orientation changes
+        // Listen for orientation changes and screen resize
         window.addEventListener('orientationchange', handleOrientationChange);
-        // Also listen for resize events, as sometimes emulators might just resize, not trigger orientationchange
         window.addEventListener('resize', handleOrientationChange);
-
+        // Initial check on page load
+        handleOrientationChange();
 
         startAlarmButton.addEventListener('click', setAlarm);
         startTimerButton.addEventListener('click', startTimer);
@@ -729,5 +723,3 @@ window.addEventListener("resize", handleOrientationChange);
     </script>
 </body>
 </html>
-
-
