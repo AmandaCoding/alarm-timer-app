@@ -164,11 +164,19 @@
 <script>
   // Orientation -> go back to portrait
   function handleOrientationChange() {
+    console.log("landscape-mode.html: handleOrientationChange called.");
     const isPortrait = window.innerHeight > window.innerWidth;
     const currentPath = window.location.pathname;
+    console.log(`landscape-mode.html: isPortrait = ${isPortrait}, currentPath = ${currentPath}`);
+
     // Check if currently in landscape-mode.html and if the orientation is now portrait
     if (isPortrait && currentPath.includes("landscape-mode.html")) {
+      console.log("landscape-mode.html: Detecting Portrait mode. Redirecting to index.html");
       window.location.href = "index.html"; // Redirect to index.html
+    } else if (!isPortrait && !currentPath.includes("landscape-mode.html")) {
+        // This condition should ideally not be met if index.html is doing its job,
+        // but adding a log for robustness.
+        console.warn("landscape-mode.html: Unexpected state - not in landscape-mode.html but not portrait.");
     }
   }
   window.addEventListener("orientationchange", handleOrientationChange);
